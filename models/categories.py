@@ -1,4 +1,4 @@
-from server.extensions import db
+from config import db
 
 
 class Category(db.Model):
@@ -9,3 +9,9 @@ class Category(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
     user = db.relationship("User", back_populates="categories")
+
+    # Turn this on once Beatrice adds category_id to the Note model
+    # notes = db.relationship("Note", back_populates="category")
+
+    def __repr__(self):
+        return f"<Category {self.name}>"
