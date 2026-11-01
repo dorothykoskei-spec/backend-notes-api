@@ -1,7 +1,5 @@
 from flask import Blueprint, request, jsonify, session
 from marshamllow import ValidationError
-from functools import wraps
-from flask import session, jsonify
 from config import db
 from models.user import User
 from schemas.user_schema import user_schema
@@ -67,17 +65,6 @@ def login():
         "message": "Login successful",
         "user": user_schema.dump(user)
     }), 200
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            return jsonify({
-                "error": "Please log in first"
-            }), 401
-        return f(*args, **kwargs)
-    return decorated_function
-
 
 @auth_bp.route("/logout", methods=["POST"])
 def logout():
