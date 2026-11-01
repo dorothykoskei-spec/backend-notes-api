@@ -1,13 +1,17 @@
 from flask import Blueprint, request, session, jsonify
+from marshmallow import ValidationError
 
-from server.extensions import db
-from server.models.category import Category
+from config import db
+from models.category import Category
+from schemas.category_schema import category_schema, categories_schema
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/categories")
 
+
 def get_current_user_id():
-    # TEMPORARY: replace with Faith's helper from auth_helpers.py
+    # TEMPORARY: replace with Faith's helper once it exists
     return session.get("user_id")
+
 
 @categories_bp.route("", methods=["POST"])
 def create_category():
@@ -15,17 +19,17 @@ def create_category():
     if not user_id:
         return jsonify({"error": "Unauthorized"}), 401
 
-    data = request.get_json() or {}
-    name = (data.get("name") or "").strip()
+    try:
+        data = category_schema.load(request.get_json() or {})
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 422
 
-    if not name:
-        return jsonify({"error": "Name is required"}), 422
-
-    category = Category(name=name, user_id=user_id)
+    category = Category(name=data["name"], user_id=user_id)
     db.session.add(category)
     db.session.commit()
 
-    return jsonify({"id": category.id, "name": category.name}), 201
+    return jsonify(category_schema.dump(category)), 201
+
 
 @categories_bp.route("", methods=["GET"])
 def get_categories():
@@ -35,7 +39,8 @@ def get_categories():
 
     categories = Category.query.filter_by(user_id=user_id).all()
 
-    return jsonify([{"id": c.id, "name": c.name} for c in categories]), 200
+    return jsonify(categories_schema.dump(categories)), 200
+
 
 @categories_bp.route("/<int:category_id>", methods=["GET"])
 def get_category(category_id):
@@ -47,7 +52,8 @@ def get_category(category_id):
     if not category:
         return jsonify({"error": "Category not found"}), 404
 
-    return jsonify({"id": category.id, "name": category.name}), 200
+    return jsonify(category_schema.dump(category)), 200
+
 
 @categories_bp.route("/<int:category_id>", methods=["PATCH"])
 def update_category(category_id):
@@ -59,17 +65,18 @@ def update_category(category_id):
     if not category:
         return jsonify({"error": "Category not found"}), 404
 
-    data = request.get_json() or {}
+    try:
+        data = category_schema.load(request.get_json() or {}, partial=True)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), 422
 
     if "name" in data:
-        name = (data["name"] or "").strip()
-        if not name:
-            return jsonify({"error": "Name is required"}), 422
-        category.name = name
+        category.name = data["name"]
 
     db.session.commit()
 
-    return jsonify({"id": category.id, "name": category.name}), 200
+    return jsonify(category_schema.dump(category)), 200
+
 
 @categories_bp.route("/<int:category_id>", methods=["DELETE"])
 def delete_category(category_id):
@@ -85,4 +92,3 @@ def delete_category(category_id):
     db.session.commit()
 
     return "", 204
-
