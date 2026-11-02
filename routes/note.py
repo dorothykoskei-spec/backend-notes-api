@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
-from flask_login import current_user, login_required
+from flask import Blueprint, request, jsonify, session
 from marshmallow import ValidationError
 
-from models import db, Note
-from schemas import NoteSchema
+from config import db
+from models.note import Note
+from models.categories import Category
+from schemas.note_schema import NoteSchema
 
 notes_bp = Blueprint("notes", __name__, url_prefix="/notes")
 
@@ -11,20 +12,34 @@ note_schema = NoteSchema()
 notes_schema = NoteSchema(many=True)
 
 
+def get_current_user_id():
+    # TEMPORARY: replace with Faith's helper once it exists
+    return session.get("user_id")
+
+
 @notes_bp.route("", methods=["POST"])
-@login_required
 def create_note():
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         data = note_schema.load(request.get_json() or {})
     except ValidationError as error:
-        return jsonify({"errors": error.messages}), 400
+        return jsonify({"errors": error.messages}), 422
+
+    category_id = data.get("category_id")
+    if category_id is not None:
+        category = Category.query.filter_by(id=category_id, user_id=user_id).first()
+        if not category:
+            return jsonify({"error": "Category not found"}), 404
 
     note = Note(
         title=data["title"],
         content=data["content"],
-        user_id=current_user.id
+        user_id=user_id,
+        category_id=category_id,
     )
-
     db.session.add(note)
     db.session.commit()
 
@@ -32,14 +47,13 @@ def create_note():
 
 
 @notes_bp.route("/<int:note_id>", methods=["GET"])
-@login_required
 def get_note(note_id):
-    note = db.session.get(Note, note_id)
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"error": "Unauthorized"}), 401
 
-    if note is None:
+    note = Note.query.filter_by(id=note_id, user_id=user_id).first()
+    if not note:
         return jsonify({"error": "Note not found"}), 404
-
-    if note.user_id != current_user.id:
-        return jsonify({"error": "Forbidden"}), 403
 
     return jsonify(note_schema.dump(note)), 200

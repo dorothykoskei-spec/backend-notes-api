@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, session
-from marshamllow import ValidationError
+from marshmallow import ValidationError
 from config import db
 from models.user import User
 from schemas.user_schema import user_schema
