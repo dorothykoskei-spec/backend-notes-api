@@ -1,7 +1,5 @@
 import os
-
 from extensions import db, bcrypt, ma
-
 
 class Config:
     SECRET_KEY = os.environ.get(
