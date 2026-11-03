@@ -1,30 +1,23 @@
-from flask import Blueprint, request, session, jsonify
+from flask import Blueprint, request, jsonify, g
 from marshmallow import ValidationError
 
 from config import db
 from models.categories import Category
 from schemas.category_schema import category_schema, categories_schema
+from auth_helpers import login_required, get_owned_category
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/categories")
 
 
-def get_current_user_id():
-    # TEMPORARY: replace with Faith's helper once it exists
-    return session.get("user_id")
-
-
 @categories_bp.route("", methods=["POST"])
+@login_required
 def create_category():
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
     try:
         data = category_schema.load(request.get_json() or {})
     except ValidationError as err:
         return jsonify({"errors": err.messages}), 422
 
-    category = Category(name=data["name"], user_id=user_id)
+    category = Category(name=data["name"], user_id=g.current_user.id)
     db.session.add(category)
     db.session.commit()
 
@@ -32,23 +25,17 @@ def create_category():
 
 
 @categories_bp.route("", methods=["GET"])
+@login_required
 def get_categories():
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    categories = Category.query.filter_by(user_id=user_id).all()
+    categories = Category.query.filter_by(user_id=g.current_user.id).all()
 
     return jsonify(categories_schema.dump(categories)), 200
 
 
 @categories_bp.route("/<int:category_id>", methods=["GET"])
+@login_required
 def get_category(category_id):
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    category = Category.query.filter_by(id=category_id, user_id=user_id).first()
+    category = get_owned_category(category_id)
     if not category:
         return jsonify({"error": "Category not found"}), 404
 
@@ -56,12 +43,9 @@ def get_category(category_id):
 
 
 @categories_bp.route("/<int:category_id>", methods=["PATCH"])
+@login_required
 def update_category(category_id):
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    category = Category.query.filter_by(id=category_id, user_id=user_id).first()
+    category = get_owned_category(category_id)
     if not category:
         return jsonify({"error": "Category not found"}), 404
 
@@ -79,12 +63,9 @@ def update_category(category_id):
 
 
 @categories_bp.route("/<int:category_id>", methods=["DELETE"])
+@login_required
 def delete_category(category_id):
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({"error": "Unauthorized"}), 401
-
-    category = Category.query.filter_by(id=category_id, user_id=user_id).first()
+    category = get_owned_category(category_id)
     if not category:
         return jsonify({"error": "Category not found"}), 404
 
