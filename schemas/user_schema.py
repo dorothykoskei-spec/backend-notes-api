@@ -2,7 +2,7 @@ from marshmallow import Schema, fields,validate
 from config import ma
 from models.user import User
 
-class UserSchema(ma.SQLAlchemyAutochema):
+class UserSchema(ma.SQLAlchemyAutoSchema):
   class Meta:
     model = User
     load_instance = False
