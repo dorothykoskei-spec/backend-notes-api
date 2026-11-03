@@ -1,15 +1,10 @@
-
 from functools import wraps
-
 from flask import session, jsonify, g
-
 from config import db
 from models.user import User
 
-
+# Get the currently logged-in user
 def get_current_user():
-    """Return the currently logged-in user."""
-
     user_id = session.get("user_id")
 
     if user_id is None:
@@ -22,10 +17,8 @@ def get_current_user():
 
     return user
 
-
+# Get the ID of the currently logged-in user
 def get_current_user_id():
-    """Return the ID of the currently logged-in user."""
-
     user = get_current_user()
 
     if user is None:
@@ -33,18 +26,15 @@ def get_current_user_id():
 
     return user.id
 
-
+# Protect routes that require a logged-in user
 def login_required(view):
-    """Protect a route from users who are not logged in."""
-
     @wraps(view)
     def wrapped_view(*args, **kwargs):
-
         user = get_current_user()
 
         if user is None:
             return jsonify({
-                "error": "Unauthorized. Please log in first."
+                "error": "Please log in to access this resource."
             }), 401
 
         g.current_user = user
@@ -53,10 +43,8 @@ def login_required(view):
 
     return wrapped_view
 
-
+# Get a note only if it belongs to the logged-in user
 def get_owned_note(note_id):
-    """Return a note only if it belongs to the logged-in user."""
-
     from models.note import Note
 
     user = get_current_user()
@@ -64,15 +52,15 @@ def get_owned_note(note_id):
     if user is None:
         return None
 
-    return Note.query.filter_by(
+    note = Note.query.filter_by(
         id=note_id,
         user_id=user.id
     ).first()
 
+    return note
 
+# Get a category only if it belongs to the logged-in user
 def get_owned_category(category_id):
-    """Return a category only if it belongs to the logged-in user."""
-
     from models.categories import Category
 
     user = get_current_user()
@@ -80,7 +68,9 @@ def get_owned_category(category_id):
     if user is None:
         return None
 
-    return Category.query.filter_by(
+    category = Category.query.filter_by(
         id=category_id,
         user_id=user.id
     ).first()
+
+    return category
