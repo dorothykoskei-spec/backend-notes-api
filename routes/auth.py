@@ -2,13 +2,13 @@ from flask import Blueprint, request, jsonify, session
 from marshmallow import ValidationError
 from config import db
 from models.user import User
-from schemas.user_schema import user_schema
+from schemas.user_schema import user_schema, user_public_schema
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json() 
+    data = request.get_json()
 
     if not data:
         return jsonify({"error": "Request data missing"}), 400
@@ -33,7 +33,7 @@ def register():
     db.session.commit()
     return jsonify({
         "message": "User registered successfully",
-        "user": user_schema.dump(user)
+        "user": user_public_schema.dump(user)
         }), 201
 
 
@@ -63,7 +63,7 @@ def login():
 
     return jsonify({
         "message": "Login successful",
-        "user": user_schema.dump(user)
+        "user": user_public_schema.dump(user)
     }), 200
 
 @auth_bp.route("/logout", methods=["POST"])
@@ -90,5 +90,5 @@ def current_user():
         }), 404
 
     return jsonify({
-        "user": user_schema.dump(user)
+        "user": user_public_schema.dump(user)
     }), 200

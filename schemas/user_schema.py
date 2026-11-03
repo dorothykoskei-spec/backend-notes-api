@@ -6,7 +6,7 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
   class Meta:
     model = User
     load_instance = False
-    exclude =('password',)
+
 
     id = fields.Int(dump_only=True)
 
@@ -23,3 +23,4 @@ class UserSchema(ma.SQLAlchemyAutoSchema):
     )
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
+user_public_schema = UserSchema(exclude=("password",))

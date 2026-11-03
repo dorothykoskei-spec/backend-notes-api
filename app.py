@@ -1,8 +1,7 @@
-
 from flask import Flask
 
 from config import Config
-from extensions import db, bcrypt, ma
+from extensions import db, bcrypt, ma, migrate
 
 # Import models
 from models.user import User
@@ -26,6 +25,7 @@ def create_app():
     db.init_app(app)
     bcrypt.init_app(app)
     ma.init_app(app)
+    migrate.init_app(app, db)
 
     # Register blueprints
     app.register_blueprint(auth_bp)
