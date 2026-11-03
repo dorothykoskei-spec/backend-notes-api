@@ -2,7 +2,7 @@ from flask import Blueprint, request, session, jsonify
 from marshmallow import ValidationError
 
 from config import db
-from models.category import Category
+from models.categories import Category
 from schemas.category_schema import category_schema, categories_schema
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/categories")

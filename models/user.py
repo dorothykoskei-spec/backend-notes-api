@@ -8,6 +8,9 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
 
+    notes = db.relationship("Note", back_populates="user", cascade="all, delete-orphan")
+    categories = db.relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    
     def __init__(self, username, email, password):
         self.username = username
         self.email = email
