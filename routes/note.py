@@ -4,7 +4,7 @@ from marshmallow import ValidationError
 from config import db
 from models.note import Note
 from schemas.note_schema import NoteSchema
-from auth_helpers import login_required, get_owned_note, get_owned_category
+from auth_helpers import login_required, get_owned_note, get_owned_category, get_current_user_id
 
 notes_bp = Blueprint("notes", __name__, url_prefix="/notes")
 
